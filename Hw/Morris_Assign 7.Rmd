@@ -1,0 +1,104 @@
+---
+title: "IS206 Assignment 7"
+author: "Sharon Morris"
+date: "3/14/2017"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+**Problem Set 1**
+Please write a function to compute the expected value and standard deviation of an array of values. Compare your results with that of R’s mean and std functions. 
+
+```{r}
+#Define the function
+expValue <- function(E) {
+    if (length(E) != 0)    # lenght of E cannot equal zero - cannot divide by zero
+        return(sum(E)/length(E))  #lenght is used to determine the length of a list
+}
+
+#Validate the function using built in mean
+validate <- c(1, 3, 10, 15, 30, 40)
+expValue(validate) == mean(validate)
+```
+
+Standard deviation 
+$$\sigma = \sqrt{\frac{\sum\limits_{i=1}^{n} \left(x_{i} - \bar{x}\right)^{2}} {n-1}}$$
+```{r}
+SD <- function(E) {
+    if ((length(E)-1) !=0)
+        return(sqrt (sum( (E-expValue(E) ) ^2 ) / (length(E)-1)))
+}
+
+#Validate using built in sd
+(SD(validate) == sd(validate))
+```
+
+
+Now, consider that instead of being able to neatly fit the values in memory in an array, you have an infinite stream of numbers coming by. How would you estimate the mean and standard deviation of such a stream? Your function should be able to return the current estimate of the mean and standard deviation at any time it is asked. Your program should maintain these current estimates and return them back at any invocation of these functions. (Hint: You can maintain a rolling estimate of the mean and standard deviation and allow these to slowly change over time as you see more and more new values).
+
+
+Estimate the mean and standard deviation of an infinite stream of numbers coming by.
+
+```{r}
+#define variables
+glength <- 0
+sum  <- 0
+sumSq <- 0
+xBar <- 0
+SD <- 0
+
+#function with variables
+gF <- function() {
+    glength <- 0
+    sum <- 0
+    xBar <- 0
+    sumSq <- 0
+    SD <- 0
+    
+}
+
+#function prints the sample size, mean and standard deviation
+pRolngStats <- function() {
+  print(sprintf("n = %s; mean = %s;  sd = %s", glength, xBar, SD))
+    
+}
+
+
+rolngStats <- function(vector) {
+    for (element in vector) {        #numbers in the vector
+        glength <<- glength + 1        #increment value in the vector by 1
+        sum <<- sum + element          #old value plus new value
+        xBar <<- sum/glength          #calculate the mean
+        sumSq <<- sumSq + element^2  
+        
+        SD <<- sqrt((glength)* sumSq - sum^2)/(glength) #calculate standard deviation
+
+        if (glength %% 10000 == 0) pRolngStats()
+    }
+    
+    return (c("n" = glength, "mean" = xBar, "sd" = SD)) 
+
+}
+```
+
+```{r}
+#Test
+gF()
+    vector <- rnorm(n = 100000, mean = 500, sd = 2.5) #generates n with mean and SD
+    rolngStats(vector)
+```
+
+Test
+```{r}
+mean(vector) #mean
+    
+sd(vector)   #standard deviation
+```
+
+
+
+#References
+#http://stackoverflow.com/questions/3655717/given-a-random-variable-with-probability-density-function-fx-how-to-compute-t
+#http://stackoverflow.com/questions/10657503/find-running-median-from-a-stream-of-integers
+#http://jonisalonen.com/2013/deriving-welfords-method-for-computing-variance/
