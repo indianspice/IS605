@@ -1,0 +1,116 @@
+---
+title: "Trace, Determinant, Factorization of MatricesIS Assignment 2"
+author: "Sharon Morris"
+date: "2/7/2017"
+output: pdf_document
+---
+
+**Problem set 1**
+(1) Show that $A^T A \neq AA^T$ in general. (Proof and demonstration.)
+
+The commutative law shows that $AB \neq BA$
+
+```{r}
+#Create matrix
+A <- matrix(c(0,0,0,1,2,3,2,4,6), nrow = 3, byrow = T)
+A
+
+
+t(A)  # transpose the martrix
+
+AtA <- t(A) %*% A  # t(A) times non-transposed matrix
+AtA
+
+AAt <- A %*% t(A)  #non-transposed matrix times t(A)
+AAt
+
+AtA == AAt  # Are the matrices equal
+```
+
+
+(2) For a special type of square matrix A, we get $A^TA = AA^T$. Under what conditions
+could this be true? (Hint: The Identity matrix I is an example of such a matrix).
+
+```{r}
+A2 <- matrix(c(2,1,3,1,0,1,3,1,2), nrow = 3, byrow = T)
+A2
+
+t(A2) # transpose matrix
+
+AA2 <- t(A2) %*% A2
+AA2
+
+A2A <- A2 %*% t(A2)
+A2A
+
+AA2 == A2A
+```
+
+
+**Problem set 2**
+Matrix factorization is a very important problem. There are supercomputers built just to do matrix factorizations. Every second you are on an airplane, matrices are being factorized. Radars that track flights use a technique called Kalman filtering. At the heart of Kalman Filtering is a Matrix Factorization operation. Kalman Filters are solving linear systems of equations when they track your flight using radars.
+
+Write an R function to factorize a square matrix A into LU or LDU, whichever you prefer.
+
+You don’t have to worry about permuting rows of A and you can assume that A is less than 5x5, if you need to hard-code any variables in your code. 
+
+```{r}
+functA  <- function(A) {
+  dimA =dim(A)[1]
+  dimA
+  
+  idMatrix <- diag( dim(A)[1]) # crete identity matrix
+  idMatrix
+ 
+  iParameters = idMatrix   # initialize parameters
+  iParameters[2,1] <- -A[2,1]/A[1,1]
+  lParameters = iParameters
+  
+  iParameters = iParameters %*% A # inialize upper matrix
+  U=lParameters
+  i=1
+  
+  U= solve(U) # initialize lower matrix
+   # loop through the column martix 
+  for  (j in 1:(dimA-i)) {
+    #y <- diag( dim(A)[1])
+    for  (i in 3:dimA) {
+      # check if pivot element is 0. 
+      if (i != j) {
+        if (iParameters[i,j] != 0 ) {  
+          if (iParameters[j,j] < 0)  idMatrix[i,j] <- -iParameters[i,j] /     iParameters[j,j]     
+          if (iParameters[j,j] > 0  )  idMatrix[i,j] <- -iParameters[i,j]/ iParameters[j,j]
+          
+          iParameters= idMatrix%*%iParameters # holder upper matrix
+          U= U %*%solve(idMatrix) # holder lower matrix
+          
+          print(iParameters)
+          print(U)
+          idMatrix <- diag( dim(A)[1]) # reset to identity matrix
+          
+        }
+        
+      }
+      
+    }
+  } 
+  print(iParameters)
+  print(U)
+  U=iParameters
+  s <- U %*% U
+  print (s) 
+  print(A)
+}
+```
+
+```{r}
+# Test 3x3 matrix
+
+A <- matrix(c(2,1,0,1,2,1,0,1,2),nrow=3, byrow=TRUE)
+functA(A)
+
+# Test 4x4 matrix
+A <- matrix(c(1,1,1,1,1,2,3,4,1,3,6,10,1,4,10,20),nrow=4, byrow = T)
+functA(A)
+```
+
