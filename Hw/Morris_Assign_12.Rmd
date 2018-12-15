@@ -1,0 +1,67 @@
+---
+title: "BIAS VARIANCE TRADEOFF IN R - Assignment 12"
+author: "Sharon Morris"
+date: "4/17/2017"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+Using the stats and boot libraries in R perform a cross-validation experiment to observe the bias variance tradeoff. You’ll use the auto data set from previous assignments. This dataset has 392 observations across 5 variables. 
+
+```{r}
+library(stats)
+library(boot)
+library(ggplot2)
+```
+
+***Load Data***
+```{r}
+autoData <- read.table(
+    "https://raw.githubusercontent.com/indianspice/IS605/master/Hw/auto-mpg.data",
+    header = FALSE, as.is = TRUE) 
+
+colnames(autoData) <- c("displacement", "horsepower","weight","acceleration","mpg")
+
+head(autoData)
+```
+
+***Explore the Data***
+```{r}
+sum(is.na(autoData))
+str(autoData)
+```
+
+
+***Polynomial Fit Model***
+Fit a polynomial model of various degrees using the glm function in R and then measure the cross validation error using cv.glm function.
+```{r}
+n <- 8
+degree <- 1:n
+cv.err5 <- numeric()
+for (i in degree) {
+  glm.fit <- glm(mpg ~ poly(displacement + horsepower + weight + acceleration, 
+                            mpg = i), data = autoData)
+  cv.err5[i - min(degree) + 1] <- cv.glm(autoData, glm.fit, K = 5)$delta[1]
+}
+summary(glm.fit)
+```
+
+
+Once you have fit the various polynomials from degree 1 to 8, you can plot the cross- validation error function as
+```{r}
+plot(degree,cv.err5,type='b', main = "Cross Validation Estimate of Prediction Error vs. Degree")
+```
+
+The graph below shows that a degree 2 or 3 polynomial seems to fit the model the closest.
+
+
+```{r}
+ggplot(autoData, aes(x = poly(displacement + horsepower + weight + acceleration), 
+                     y = mpg)) + geom_point()
+```
+
+
+
+**Reference**
+https://www.r-bloggers.com/cross-validation-estimating-prediction-error/

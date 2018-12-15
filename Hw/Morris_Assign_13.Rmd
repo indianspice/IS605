@@ -1,0 +1,74 @@
+---
+title: "Numerical Integration AND Differentiation"
+author: "Sharon Morris"
+date: "4/23/2017"
+output:
+  pdf_document: 
+    latex_engine: lualatex
+  html_document: default
+---
+
+Write a program to compute the derivative of $f(x) = x^3 + 2x^2$ at any value of $x$. Your function should take in a value of $x$ and return back an approximation to the derivative of $f(x)$ evaluated at that value. You should not use the analytical form of the derivative to compute it. Instead, you should compute this approximation using limits.
+$$f'(x)=\lim_{h \to 0 } \frac{f(x+h)-f(x)}{h}$$
+
+```{r}
+#define the function f(x)
+f <- function(x) {x^3 + 2*x^2}
+
+#limit
+d <- function(x) {
+    h = 1e-6
+    d = (f(x + h) - f(x)) / (h)
+    return(d)
+}
+
+d(605)
+```
+
+Now, write a program to compute the area under the curve for the function $3x2 + 4x$ in the range $x = [1, 3]$. You should first split the range into many small intervals using some really small ∆x value (say 1e-6) and then compute the approximation to the area under the curve.
+```{r}
+x <- seq(1, 3, by=1e-6)
+func <- 3*(x^2) + 4*x
+area <- func*(1e-6)
+sum(area)
+```
+
+Please solve these problems analytically (i.e. by working out the math) and submit your answers.
+
+Use integration by parts to solve for $\int sin(x)cos(x)dx$
+$d(uv)=udv+vdu$
+$u = sin(x), du = cos(x) dx$
+$\frac{u^{1+1}}{1+1}$
+$u= sin(x)$ $\frac{sin^{1+1}(x)}{1+1}$ ∴
+$$\int sin(x)cos(x)dx = \frac{sin^2(x)}{2}+C$$
+
+Use integration by parts to solve for $\int x^2e^xdx$
+$\int uv' = uv - \int u'v$
+$u = x^2, u'=2x, v'= e^x, v= e^x$
+$= x^2e^x - \int 2xe^x dx$
+$= \int 2xe^x dx = 2(e^xx-e^x)$
+$= x^2e^x-2(e^xx-e^x)$ ∴
+$$\int x^2e^x dx = x^2e^x-2(e^xx-e^x)+C$$
+
+What is $\frac{d}{dx}(x cos(x))?$
+$\frac{d}{dx}(x)= 1$
+$\frac{d}{dx}(cos(x)) = -sin(x)$
+$= 1cos(x) + (-sin(x))x$
+$$\frac{d}{dx}(x cos(x)) = cos(x)-xsin(x)$$
+
+•Whatis d(ex4)?
+$\frac{df(u)}{dx} = \frac{df}{du}\cdot\frac{du}{dx}$
+$x^4 = u$ $=\frac{d}{du}(e^u)\frac{d}{dx}(x^4)$
+$\frac{d}{du}(e^u) = e^u$
+$\frac{d}{dx}(x^4) = 4x^3$
+$= e^u4x^3$
+$u = x^4$
+$$\frac{d}{dx}(e^{x^4}) = e^{x^4}4x^3$$
+
+
+
+
+**References**
+https://cran.r-project.org/web/packages/Deriv/Deriv.pdf
+https://www.mathsisfun.com/calculus/integration-by-parts.html
+http://tutorial.math.lamar.edu/Classes/CalcII/IntegrationByParts.aspx
