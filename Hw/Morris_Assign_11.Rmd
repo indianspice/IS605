@@ -1,0 +1,112 @@
+---
+title: "Linear Regression IS605 - Assignment 11"
+author: "Sharon Morris"
+date: "4/9/2017"
+output:
+  html_document: default
+  pdf_document:
+    latex_engine: lualatex
+---
+
+Using R’s lm function, perform regression analysis and measure the significance of the independent variables for the following two data sets. In the first case, you are evaluating the statement that we hear that Maximum Heart Rate of a person is related to their age by the following equation:
+$$MaxHR = 220 − Age$$
+
+Perform a linear regression analysis fitting the Max Heart Rate to Age using the lm function in R. What is the resulting equation? Is the effect of Age on Max HR significant? What is the significance level? Please also plot the fitted relationship between Max HR and Age.
+
+
+```{r}
+#create data frame
+(regData = data.frame(
+    Age = c(18, 23, 25, 35, 65, 54, 34, 56, 72, 19, 23, 42, 18, 39, 37),
+MaxHR = c(202, 186, 187, 180, 156, 169, 174, 172, 153, 199, 193, 174, 198, 183, 178)
+))
+```
+
+
+The estimate of the model intercept is 210.0486
+The signifiance level is F-statistic:   130 on 1 and 13 DF,  p-value: 3.848e-08
+```{r}
+alli.mod1 <- lm(MaxHR ~ Age, data = regData)
+summary(alli.mod1)
+```
+
+```{r}
+require(lattice)
+#Plot the residuals
+xyplot(resid(alli.mod1) ~ fitted(alli.mod1),
+  xlab = "Fitted Values",
+  ylab = "Residuals",
+  main = "Residual Diagnostic Plot",
+  panel = function(x, y, ...)
+  {
+    panel.grid(h = -1, v = -1)
+    panel.abline(h = 0)
+    panel.xyplot(x, y, ...)
+  }
+)
+```
+
+
+```{r}
+#The function resid extracts the model residuals from the fitted model object
+qqmath( ~ resid(alli.mod1),
+  xlab = "Theoretical Quantiles",
+  ylab = "Residuals"
+)
+```
+
+Using the Auto data set from Assignment 5 perform a Linear Regression analysis using mpg as the dependent variable and the other 4 (displacement, horse- power, weight, acceleration) as independent variables. What is the final linear regression fit equation? Which of the 4 independent variables have a significant impact on mpg? What are their corresponding significance levels? What are the standard errors on each of the coefficients? 
+
+```{r}
+auto <- as.data.frame(read.table("auto-mpg.data", header = FALSE, as.is = TRUE)) 
+colnames(auto) <- c("displacement", "horsepower", "weight", "acceleration", "mpg")
+head(auto)
+
+autoLm = lm(formula = mpg ~ displacement + horsepower + weight + acceleration,
+       data = auto)
+(autoLmSum <- summary(autoLm))
+```
+The intercept and coefficients - the 
+```{r}
+autoLmSum$coefficients[,1]
+```
+
+From the results, the liner regression fit equation is: mpg = 45.251139699 + -0.006000871 * displacement + -0.043607731 * horsepower - -0.005280508 * weight - -0.023147999 * acceleration -- weight has a significant impact on mpg
+
+
+Take the entire data set (all 392 points) and perform linear regression and measure the 95% confidence intervals. 
+```{r}
+#Examine at 95% confidence interval
+confint(autoLm, level = .95)
+```
+
+First take any random 40 data points from the entire auto data sample and perform the linear regression fit and measure the 95% confidence intervals.
+```{r}
+autoSample <- auto[sample(1:nrow(auto), 40,
+  	replace=FALSE),]
+head(autoSample)
+
+autoSampLm = lm(formula = mpg ~ displacement + horsepower + weight + acceleration,
+       data = autoSample)
+(autoSampSum <- summary(autoSampLm))
+
+
+#Examine at 95% confidence interval
+confint(autoSampLm, level = .95)
+
+```
+
+Please report the resulting fit equation, their significance values and confidence intervals for each of the two runs.
+
+The p=value of the 392 records is larger than the p-value fo the sample.
+```{r}
+autoLmSum  #entire data set
+autoSampSum #sample summary
+
+```
+
+
+
+**Reference**
+https://www.r-bloggers.com/simple-linear-regression-2/
+https://www.r-bloggers.com/r-tutorial-series-multiple-linear-regression/
