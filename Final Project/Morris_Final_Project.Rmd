@@ -1,0 +1,285 @@
+---
+title: "Final Project IS605"
+author: "Sharon Morris"
+date: "5/06/2017"
+output:
+  word_document:
+    toc: yes
+  html_notebook:
+    toc: yes
+    toc_float: yes
+  pdf_document:
+    latex_engine: lualatex
+  html_document:
+    toc: yes
+    toc_float: yes
+---
+*Kaggle.com Home Price Completion*
+
+**1. You are to register for Kaggle.com (free) and compete in the House Prices: Advanced Regression Techniques competition.**
+
+***House Prices: Advanced Regression Techniques competition***
+Ask a home buyer to describe their dream house, and they probably won't begin with the height of the basement ceiling or the proximity to an east-west railroad. But this playground competition's dataset proves that much more influences price negotiations than the number of bedrooms or a white-picket fence.
+
+With 79 explanatory variables describing (almost) every aspect of residential homes in Ames, Iowa, this competition challenges you to predict the final price of each home.
+
+**Load Library**
+```{r, message=F, warning=F}
+library(formattable)
+library(stats)
+require(dplyr)
+library(MASS)
+
+devtools::install_github("rubenarslan/formr")
+```
+
+#1. Define Variables#
+Pick one of the quantitative independent variables from the training data set (train.csv) , and define that variable as  X.   Pick SalePrice as the dependent variable, and define it as Y for the next analysis.
+```{r}
+train <- read.csv(paste0("https://raw.githubusercontent.com/indianspice/IS605/master/Final%20Project/train.csv"), stringsAsFactors = F)
+
+#Quantitative independent variable BsmtFinSF1: Type 1 finished square feet
+X <- train$BsmtFinSF1
+Y <- train$SalePrice
+
+#Summary of independent and dependent variables
+summary(X)
+summary(Y)
+```
+
+```{r}
+
+hist(train$BsmtFinSF1, 
+     main = "Basement Finished Square Feet - Type 1",
+     xlab = "Basement Finished Sq",
+     col = "orange")
+
+hist(train$SalePrice, 
+     main = "Sale Price",
+     xlab = "Sale Price",
+     col = "gold")
+```
+
+
+#2. Probability
+Calculate as a minimum the below probabilities a through c.  Assume the small letter $"x"$ is estimated as the 4th quartile of the $X$ variable, and the small letter $"y"$ is estimated as the 2d quartile of the $Y$ variable.  Interpret the meaning of all probabilities. 
+a. $P(X>x | Y>y)$	
+```{r}
+quantile(X) #Independent variable
+quantile(Y)
+```
+
+The probability of a house at the second quartile has an overall condition rating at the third quartile is 13.5% 
+```{r}
+
+(sum(Y > 163000 & X > 6) / length(X)) / (sum(Y > 163000) / length(Y))
+```
+
+b.  $P(X>x, Y>y)$
+```{r}
+sum(X > 6 & Y > 163000) / length(X)
+```
+
+c.  $P(X<x | Y>y)$
+```{r}
+(sum(Y > 163000 & X < 6) / length(X)) / (sum(Y > 163000) / length(Y))
+```
+
+**Count Table**
+```{r}
+#Sum rows with sales prices > 163000
+(YQ2 <- sum(Y > 163000))
+#Count of all rows sales prices
+(YTotal <- length(Y))
+#Count of all rows of overall condition
+(XTotal <- length(X))
+#Rows greater than 163,000 and greater than 6
+(Ygt <- sum(Y > 163000 & X > 6))
+#Rows greater than 163,000 and less than 6
+(Ylt <- sum(Y > 163000 & X < 6))
+
+sum(train[,'BsmtFinSF1'] <= 6 & train[,'SalePrice'] > 163000)
+sum(train[,'BsmtFinSF1'] > 6 & train[,'SalePrice'] <= 163000)
+sum(train[,'BsmtFinSF1'] > 6 & train[,'SalePrice'] > 163000)
+```
+
+
+| X/Y             | <=2nd Quartile | >2nd Quartile | Total |
+|-----------------|----------------|---------------|-------|
+| <= 3rd Quartile |            728 |           215 |   943 |
+| > 3rd Quartile  |            479 |           513 |   992 |
+| Total           |          1,207 |           788 | 1,995 |
+
+**Does splitting the training data in this fashion make them independent?**
+$P(X|Y)=P(X)P(Y))?$
+$A =$ observations above the 3rd quartile of $X$
+$B =$ observations above the 2nd quartile of $Y$ 
+
+$P(A|B)\neq P(A)P(B)$ indicates splitting the data in this fashion did not make them independent.
+```{r}
+#Assign to variables
+PA <- 299/1657
+PB <- 728/1657
+
+#P(A) * P(B)
+(AXB <- PA*PB)
+
+#Convert to a percent
+percent(AXB) 
+
+#P(A|B)
+PAl <- 98/1657
+PBl <- 1657/728
+
+(PABl <- PAl*PBl)
+percent(PABl)
+```
+
+**Evaluate by running a Chi Square test for association.**
+
+The chi-square value is 17.895. Since the p-value is less than the significance level of 0.05, reject the null hypothesis and conclude that the two variables are in fact dependent.
+```{r}
+#Pearson's Chi Square test with Yates -- 2x2 table
+chisq.test(matrix(c(728, 630, 201, 98), ncol=2))
+```
+
+#3. Descriptive and Inferential Statistics#
+Transform both variables simultaneously using Box-Cox transformations.  You might have to research this. Using the transformed variables, run a correlation analysis and interpret.  Test the hypothesis that the correlation between these variables is 0 and provide a 99% confidence interval.  Discuss the meaning of your analysis.
+```{r}
+#Examine variable names
+names(train)
+```
+
+```{r, message=F, warning=F}
+detach("package:dplyr", character.only = TRUE)
+library("dplyr", character.only = TRUE)
+
+#Selecting 4 numeric variables 
+numericV <- select(train, SalePrice, EnclosedPorch, BsmtFinSF1, LotArea) 
+numericV <- na.omit(numericV) #Remove nas 
+glimpse(numericV)
+
+```
+
+***Provide univariate descriptive statistics***  
+```{r}
+#Mean,median,25th and 75th quartiles,min,max
+summary(numericV)
+```
+
+***Provide a scatterplot of X and Y.***
+```{r}
+#Look at all the relationships in selected variables
+plot(numericV, col="darkred")
+```
+
+Test the hypothesis that the correlation between these variables is 0 and provide a 99% confidence interval. 
+
+It appeas that OverallCond and SalesPrice have a negative correlation
+```{r}
+var <- data.frame(train$BsmtFinSF1, train$SalePrice)
+cor(var)
+
+cor.test(train$BsmtFinSF1, train$SalePrice, conf.level = 0.99)
+```
+
+#4. Linear Algebra and Correlation
+Invert your correlation matrix. (This is known as the precision matrix and contains variance inflation factors on the diagonal.) Multiply the correlation matrix by the precision matrix, and then multiply the precision matrix by the correlation matrix.
+
+The table below show correlations coefficients between the possible pairs of variables
+```{r}
+d <- select(train, BsmtFinSF1, SalePrice)
+
+(corMatrix <- cor(d))  #Correlation matrix
+round(corMatrix, 3)
+```
+
+
+```{r}
+#The inverse of the correlation matrix
+(preMatrix <- solve(corMatrix))
+round(preMatrix, 3)
+```
+
+Multiply the correlation matrix by the precision matrix, and the precision matrix by the correlation matrix
+```{r}
+corMatrix %*% preMatrix #Correlation * precision
+```
+
+```{r}
+preMatrix %*% corMatrix #Precision * correlation
+```
+
+
+#5. Calculus-Based Probability & Statistics
+For your non-transformed independent variable, location shift it so that the minimum value is above zero. Then load the MASS package and run fitdistr to fit a density function of your choice. 
+(See $\url{https://stat.ethz.ch/R-manual/R-devel/library/MASS/html/fitdistr.html$}). Find the optimal value of the parameters for this distribution, and then take 1000 samples from this distribution (e.g., $rexp(1000, λ$) for an exponential). Plot a histogram and compare it with a histogram of your non-transformed original variable.
+```{r}
+#Fits the exponential distribution to the data
+fitDist <- fitdistr(X,"exponential")
+(lam <- fitDist$estimate)  #Lambda
+
+#Get values from the exponential distribution
+n <- rexp(1000, lam)
+
+#Histogram of the exponential 
+hist(n, prob=TRUE, col="orange", main = "Histogram of Exponential Function", xlab="Theoretical")
+
+#Hitogram of the OverCond
+hist(train$BsmtFinSF1, prob=TRUE, col="gold", main = "Histogram of Exponential Function", xlab="Theoretical")
+```
+
+#6. Modeling 
+Build some type of regression model and submit your model to the competition board.  Provide your complete model summary and results with analysis.
+
+$Y=\beta_0+\beta_1X_1+\beta_2X_2+e$
+$Y$= Sale Price - Response variable
+$B_1$= BasementFinSF1 - First regression coefficient
+$B_2$= Lot Area - Second regression coefficient
+
+```{r}
+#Correlation
+cor(na.omit(cbind(numericV, Y)))
+```
+
+R-squared = 7.54% explains the variability in $Y$ caused by the variables used in this model.
+The P-value < .001 indicates the regression coefficient variables are statistically significant
+```{r}
+fit <- lm(SalePrice ~ BsmtFinSF1 + LotArea, data = train)
+(sum <- summary(fit)); par(mfrow = c(2, 2)); plot(fit)
+```
+
+```{r}
+test <- read.csv(paste0("https://raw.githubusercontent.com/indianspice/IS605/master/Final%20Project/test.csv"), stringsAsFactors = F)
+
+predictor1 <- test$BsmtFinSF1
+predictor1 <- na.omit(predictor1) #Remove missing values
+predictor2 <- test$LotArea
+predictor2 <- na.omit(predictor2)
+
+rFit <- as.data.frame(cbind("Id" = test[,"Id"],
+                            "SalePrice" = fit$coefficients[1] +
+                              fit$coefficients[2] * predictor1 +
+                              fit$coefficients[3] * predictor2))
+write.csv(rFit, "KaggleSubmission.csv", row.names = F)
+```
+
+```{r}
+dim(rFit)
+```
+
+**Kaggle Information**
+
+
+**Refernces**
+http://stackoverflow.com/questions/24202120/dplyrselect-function-clashes-with-massselect
+http://stackoverflow.com/questions/11995832/inverse-of-matrix-in-r
+http://www.theanalysisfactor.com/interpreting-regression-coefficients/
+https://rstudio-pubs-static.s3.amazonaws.com/234598_13317c1c83534900b9c36eda2f205a87.html#modeling
+
+**Report your Kaggle.com**
+
+<div id="bg">
+  <img src="/Users/sharonmorris/IS605/kaggle.png" alt="">
+</div>  
+
